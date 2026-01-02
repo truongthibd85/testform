@@ -47,9 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function addData(newRecord) {
-    // Thử dùng ThingProxy để bypass CORS
-    const targetUrl = `https://api.appsheet.com/api/v2/apps/${YOUR_APP_ID}/tables/${table}/Action`;
-    const appsheetUrl = `https://thingproxy.freeboard.io/fetch/${targetUrl}`;
+    // Cấu hình Proxy
+    const appId = YOUR_APP_ID;
+    const accessKey = YOUR_APPSHEET_ACCESS_KEY;
+    const region = 'www'; // hoặc eu, us tùy tài khoản (mặc định www)
+
+    const targetUrl = `https://${region}.appsheet.com/api/v2/apps/${appId}/tables/${table}/Action`;
+
+    // Ưu tiên 1: Dùng corsproxy.io (Ổn định hơn thingproxy)
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     const payload = {
         Action: 'Add',
@@ -60,31 +66,50 @@ async function addData(newRecord) {
         Rows: [newRecord]
     };
 
+    const options = {
+        method: 'POST',
+        headers: {
+            'ApplicationAccessKey': accessKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    };
+
     try {
-        const response = await fetch(appsheetUrl, {
-            method: 'POST',
-            headers: {
-                'ApplicationAccessKey': YOUR_APPSHEET_ACCESS_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        console.log("Đang gửi qua Proxy...");
+        let response = await fetch(proxyUrl, options);
+
+        // Nếu Proxy lỗi (ví dụ 403, 500...), thử gửi trực tiếp (dành cho người đã cài Extension)
+        if (!response.ok) {
+            console.warn("Proxy thất bại, thử gửi trực tiếp...");
+            response = await fetch(targetUrl, options);
+        }
 
         if (response.ok) {
             const data = await response.json();
-            console.log("info:", data);
-            showToast('success', 'Thành công!', 'Dữ liệu đã được gửi lên hệ thống.');
+            console.log("Success:", data);
+            showToast('success', 'Thành công!', 'Dữ liệu đã được lưu.');
             document.getElementById('surveyForm').reset();
-            // Reset date after form reset
-            const now = new Date(); // Re-calc time
-            // ... (Simple fix: just let user pick again or reload, but let's keep it simple)
+            // Reset thời gian
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('thoi_gian_khao_sat').value = `${year}-${month}-${day}T${hours}:${minutes}`;
         } else {
-            console.error("Error status:", response.status);
-            showToast('error', 'Lỗi!', `Lỗi gửi dữ liệu: ${response.status}`);
+            console.error("Lỗi:", response.status, response.statusText);
+            throw new Error(`Server trả về lỗi: ${response.status}`);
         }
     } catch (error) {
         console.error("Fetch Error:", error);
-        showToast('error', 'Lỗi kết nối!', 'Có thể do chặn CORS hoặc lỗi mạng.');
+
+        let msg = 'Không thể kết nối đến AppSheet.';
+        if (error.message.includes('Mg') || error.message.includes('Fetch')) {
+            msg = 'Lỗi chặn CORS. Hãy cài Extension "Allow CORS" để chạy được trên trình duyệt.';
+        }
+        showToast('error', 'Lỗi Gửi!', msg);
     }
 }
 
