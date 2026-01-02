@@ -47,14 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function addData(newRecord) {
-    // Cấu hình Proxy
+    // Cấu hình
     const appId = YOUR_APP_ID;
     const accessKey = YOUR_APPSHEET_ACCESS_KEY;
-    const region = 'www'; // hoặc eu, us tùy tài khoản (mặc định www)
-
+    const region = 'www';
     const targetUrl = `https://${region}.appsheet.com/api/v2/apps/${appId}/tables/${table}/Action`;
-
-    // Ưu tiên 1: Dùng corsproxy.io (Ổn định hơn thingproxy)
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     const payload = {
@@ -75,42 +72,60 @@ async function addData(newRecord) {
         body: JSON.stringify(payload)
     };
 
+    let success = false;
+
+    // Lần 1: Thử qua Proxy
     try {
         console.log("Đang gửi qua Proxy...");
-        let response = await fetch(proxyUrl, options);
-
-        // Nếu Proxy lỗi (ví dụ 403, 500...), thử gửi trực tiếp (dành cho người đã cài Extension)
-        if (!response.ok) {
-            console.warn("Proxy thất bại, thử gửi trực tiếp...");
-            response = await fetch(targetUrl, options);
-        }
-
+        const response = await fetch(proxyUrl, options);
         if (response.ok) {
-            const data = await response.json();
-            console.log("Success:", data);
-            showToast('success', 'Thành công!', 'Dữ liệu đã được lưu.');
-            document.getElementById('surveyForm').reset();
-            // Reset thời gian
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('thoi_gian_khao_sat').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            console.log("Gửi qua Proxy thành công!");
+            await handleSuccess(response);
+            success = true;
         } else {
-            console.error("Lỗi:", response.status, response.statusText);
-            throw new Error(`Server trả về lỗi: ${response.status}`);
+            console.warn(`Proxy phản hồi lỗi: ${response.status}. Chuyển sang gửi trực tiếp...`);
         }
-    } catch (error) {
-        console.error("Fetch Error:", error);
-
-        let msg = 'Không thể kết nối đến AppSheet.';
-        if (error.message.includes('Mg') || error.message.includes('Fetch')) {
-            msg = 'Lỗi chặn CORS. Hãy cài Extension "Allow CORS" để chạy được trên trình duyệt.';
-        }
-        showToast('error', 'Lỗi Gửi!', msg);
+    } catch (proxyError) {
+        console.warn("Lỗi kết nối Proxy (CORS/Network). Chuyển sang gửi trực tiếp...", proxyError);
     }
+
+    // Lần 2: Thử gửi trực tiếp (Fallback) nếu Proxy thất bại
+    if (!success) {
+        try {
+            console.log("Đang thử gửi trực tiếp...");
+            const response = await fetch(targetUrl, options);
+            if (response.ok) {
+                console.log("Gửi trực tiếp thành công!");
+                await handleSuccess(response);
+                success = true;
+            } else {
+                throw new Error(`Lỗi Server: ${response.status}`);
+            }
+        } catch (directError) {
+            console.error("Gửi trực tiếp thất bại:", directError);
+            let msg = 'Không thể kết nối đến AppSheet.';
+            if (directError.message.includes('Mg') || directError.message.includes('Fetch') || directError.message.includes('Failed to fetch')) {
+                msg = 'Lỗi chặn CORS. Bạn cần cài Extension "Allow CORS" để chạy trên trình duyệt.';
+            }
+            showToast('error', 'Lỗi Gửi!', msg);
+        }
+    }
+}
+
+async function handleSuccess(response) {
+    const data = await response.json();
+    console.log("Response Data:", data);
+    showToast('success', 'Thành công!', 'Dữ liệu đã được lưu.');
+    document.getElementById('surveyForm').reset();
+
+    // Reset thời gian
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('thoi_gian_khao_sat').value = `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function showToast(type, title, message) {
