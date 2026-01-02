@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khảo Sát Thông Tin</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-mesh"></div>
+    
+    <div class="container">
+        <div class="form-card">
+            <div class="form-header">
+                <h1>Khảo Sát</h1>
+                <p>Vui lòng điền đầy đủ thông tin bên dưới</p>
+            </div>
+
+            <form id="surveyForm">
+                <div class="form-group">
+                    <label for="ten_nguoi_khao_sat">Họ và Tên</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="ten_nguoi_khao_sat" name="ten_nguoi_khao_sat" placeholder="Nhập họ tên của bạn" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="so_dien_thoai">Số Điện Thoại</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-phone"></i>
+                        <input type="tel" id="so_dien_thoai" name="so_dien_thoai" placeholder="Nhập số điện thoại" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="thoi_gian_khao_sat">Thời Gian Khảo Sát</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-clock"></i>
+                        <input type="datetime-local" id="thoi_gian_khao_sat" name="thoi_gian_khao_sat" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dia_chi">Địa Chỉ</label>
+                    <div class="input-wrapper high-input">
+                        <i class="fa-solid fa-location-dot location-icon"></i>
+                        <textarea id="dia_chi" name="dia_chi" placeholder="Nhập địa chỉ hiện tại" rows="3" required></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn">
+                    <span class="btn-text">Gửi Thông Tin</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <div class="spinner hidden"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-icon"><i class="fa-solid fa-check"></i></div>
+        <div class="toast-content">
+            <h3 id="toast-title">Thành công!</h3>
+            <p id="toast-message">Dữ liệu đã được cập nhật.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
